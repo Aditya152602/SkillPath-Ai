@@ -46,6 +46,10 @@ html,body,#root{margin:0;padding:0;width:100%;min-height:100vh;}
 .inp{padding:.75rem 1rem;background:var(--bge);border:1px solid var(--cb);border-radius:12px;color:var(--ct);font-size:1rem;transition:all .2s;width:100%;}
 .inp:focus{outline:none;border-color:var(--cp);box-shadow:0 0 0 3px var(--cpg);}
 .inp::placeholder{color:var(--ctm);}.inp-e{border-color:var(--ce) !important;}
+/* Password wrapper — display:grid forces the input to size identically to a bare .inp */
+.pw-wrap{position:relative;display:grid;}
+.pw-wrap .inp{padding-right:2.75rem;}
+.pw-eye{position:absolute;right:.75rem;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--ctm);font-size:1.1rem;cursor:pointer;padding:0;display:flex;align-items:center;line-height:1;}
 .err-msg{font-size:.75rem;color:var(--ce);}.err-box{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);border-radius:12px;padding:.75rem;font-size:.875rem;color:var(--ce);}
 /* Tags */
 .tag{display:inline-flex;align-items:center;gap:4px;padding:.25rem .75rem;border-radius:9999px;font-size:.75rem;font-weight:600;}
@@ -354,10 +358,10 @@ function Login({ onLogin, go }) {
           <Field label="Email" id="em" type="email" value={f.email} onChange={e => setF({ ...f, email: e.target.value })} placeholder="you@example.com" error={err.email} required autoComplete="email" />
           <div className="fld">
             <label className="lbl">Password <span style={{ color: 'var(--ce)' }}>*</span></label>
-            <div style={{ position: 'relative', width: '100%' }}>
+            <div className="pw-wrap">
               <input type={showPw ? 'text' : 'password'} value={f.password} onChange={e => setF({ ...f, password: e.target.value })}
-                placeholder="Your password" className={`inp${err.password ? ' inp-e' : ''}`} style={{ paddingRight: 44, width: '100%', boxSizing: 'border-box' }} />
-              <button type="button" onClick={() => setShowPw(!showPw)} style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--ctm)', fontSize: '1.1rem' }}>
+                placeholder="Your password" className={`inp${err.password ? ' inp-e' : ''}`} />
+              <button type="button" className="pw-eye" onClick={() => setShowPw(!showPw)}>
                 {showPw ? '🙈' : '👁'}
               </button>
             </div>
@@ -412,10 +416,10 @@ function Register({ onRegister, go }) {
           <Field label="Email" id="em" type="email" value={f.email} onChange={s('email')} placeholder="you@example.com" error={err.email} required autoComplete="email" />
           <div className="fld">
             <label className="lbl">Password <span style={{ color: 'var(--ce)' }}>*</span></label>
-            <div style={{ position: 'relative', width: '100%' }}>
+            <div className="pw-wrap">
               <input type={showPw ? 'text' : 'password'} value={f.password} onChange={s('password')}
-                placeholder="Min 6 characters" className={`inp${err.password ? ' inp-e' : ''}`} style={{ paddingRight: 44, width: '100%', boxSizing: 'border-box' }} />
-              <button type="button" onClick={() => setShowPw(!showPw)} style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--ctm)', fontSize: '1.1rem' }}>
+                placeholder="Min 6 characters" className={`inp${err.password ? ' inp-e' : ''}`} />
+              <button type="button" className="pw-eye" onClick={() => setShowPw(!showPw)}>
                 {showPw ? '🙈' : '👁'}
               </button>
             </div>
