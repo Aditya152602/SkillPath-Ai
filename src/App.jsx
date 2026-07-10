@@ -3,7 +3,8 @@ import { useState, useEffect, useRef } from "react"
 // ─── CSS ───────────────────────────────────────────────────────────────────────
 const CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
-.sp{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(--ct);min-height:100vh;-webkit-font-smoothing:antialiased;
+html,body,#root{margin:0;padding:0;width:100%;min-height:100vh;}
+.sp{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(--ct);min-height:100vh;width:100%;-webkit-font-smoothing:antialiased;
 --cp:#6C63FF;--cpl:#8B85FF;--cpd:#4A43CC;--cpg:rgba(108,99,255,0.2);
 --ca:#00D4AA;--cal:#00F0C0;
 --bg:#0F0F1A;--bgs:#1A1A2E;--bge:#242438;--bgc:#1E1E32;
@@ -72,7 +73,7 @@ const CSS = `
 .overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(4px);z-index:1000;display:flex;align-items:center;justify-content:center;padding:1rem;animation:a-in .2s ease;}
 .modal{background:var(--bgs);border:1px solid var(--cb2);border-radius:24px;padding:2rem;width:100%;max-width:520px;animation:a-up .3s ease;max-height:90vh;overflow-y:auto;}
 /* Auth */
-.auth-pg{min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--bg);padding:1.5rem;position:relative;overflow:hidden;}
+.auth-pg{min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--bg);padding:1.5rem;position:relative;overflow-y:auto;}
 .auth-pg::before{content:'';position:absolute;width:500px;height:500px;background:radial-gradient(circle,var(--cpg) 0%,transparent 70%);top:-200px;right:-200px;pointer-events:none;}
 .auth-card{background:var(--bgs);border:1px solid var(--cb2);border-radius:24px;padding:2.5rem;width:100%;max-width:480px;position:relative;z-index:1;}
 /* Layout */
@@ -145,40 +146,23 @@ const S = {
 // Key lives in Vercel env vars only — never exposed to browser
 const GROQ_MODEL = 'llama-3.3-70b-versatile'
 
-// Client-side key — stored on window so module-level ask() can read it across re-renders.
-// Restored from sessionStorage so it survives page refreshes within the same tab.
-window.__SP_KEY =
-  window.__SP_KEY ||
-  (() => {
-    try { return sessionStorage.getItem('sp_key') || '' } catch { return '' }
-  })()
-
+// All AI calls go through /api/chat — the GROQ_API_KEY lives only in Vercel env vars.
+// No user-facing API key input is ever shown.
 async function ask(messages, system, maxTokens = 1000) {
   const groqMsgs = []
   if (system) groqMsgs.push({ role: 'system', content: system })
   groqMsgs.push(...messages.map(m => ({ role: m.role, content: m.content })))
 
   const body = JSON.stringify({ model: GROQ_MODEL, max_tokens: maxTokens, messages: groqMsgs })
-  const clientKey = window.__SP_KEY
 
   let r
   try {
-    if (clientKey) {
-      // Direct browser → Groq call using the key the user pasted in the modal.
-      // Works in local dev AND on Vercel when the env-var key is not set.
-      r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + clientKey },
-        body,
-      })
-    } else {
-      // Server-side proxy — key lives in Vercel env vars (or Vite dev middleware).
-      r = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body,
-      })
-    }
+    // Always use the server-side proxy — GROQ_API_KEY is set in Vercel env vars.
+    r = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body,
+    })
   } catch (netErr) {
     throw new Error('Network error — check your internet connection.')
   }
@@ -187,11 +171,10 @@ async function ask(messages, system, maxTokens = 1000) {
     let msg = 'API Error ' + r.status
     try {
       const e = await r.json()
-      // e.error can be a plain string (our proxy) OR an object (Groq's own errors)
       msg = (typeof e?.error === 'string' ? e.error : e?.error?.message) || msg
     } catch {}
     if (r.status === 429) throw new Error('Rate limit hit — wait a moment and try again.')
-    if (r.status === 401) throw new Error('Invalid API key — please re-enter your Groq key.')
+    if (r.status === 401) throw new Error('Server API key error — contact the administrator.')
     throw new Error(msg)
   }
   const d = await r.json()
@@ -371,9 +354,9 @@ function Login({ onLogin, go }) {
           <Field label="Email" id="em" type="email" value={f.email} onChange={e => setF({ ...f, email: e.target.value })} placeholder="you@example.com" error={err.email} required autoComplete="email" />
           <div className="fld">
             <label className="lbl">Password <span style={{ color: 'var(--ce)' }}>*</span></label>
-            <div style={{ position: 'relative' }}>
+            <div style={{ position: 'relative', width: '100%' }}>
               <input type={showPw ? 'text' : 'password'} value={f.password} onChange={e => setF({ ...f, password: e.target.value })}
-                placeholder="Your password" className={`inp${err.password ? ' inp-e' : ''}`} style={{ paddingRight: 44 }} />
+                placeholder="Your password" className={`inp${err.password ? ' inp-e' : ''}`} style={{ paddingRight: 44, width: '100%', boxSizing: 'border-box' }} />
               <button type="button" onClick={() => setShowPw(!showPw)} style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--ctm)', fontSize: '1.1rem' }}>
                 {showPw ? '🙈' : '👁'}
               </button>
@@ -429,9 +412,9 @@ function Register({ onRegister, go }) {
           <Field label="Email" id="em" type="email" value={f.email} onChange={s('email')} placeholder="you@example.com" error={err.email} required autoComplete="email" />
           <div className="fld">
             <label className="lbl">Password <span style={{ color: 'var(--ce)' }}>*</span></label>
-            <div style={{ position: 'relative' }}>
+            <div style={{ position: 'relative', width: '100%' }}>
               <input type={showPw ? 'text' : 'password'} value={f.password} onChange={s('password')}
-                placeholder="Min 6 characters" className={`inp${err.password ? ' inp-e' : ''}`} style={{ paddingRight: 44 }} />
+                placeholder="Min 6 characters" className={`inp${err.password ? ' inp-e' : ''}`} style={{ paddingRight: 44, width: '100%', boxSizing: 'border-box' }} />
               <button type="button" onClick={() => setShowPw(!showPw)} style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--ctm)', fontSize: '1.1rem' }}>
                 {showPw ? '🙈' : '👁'}
               </button>
@@ -482,7 +465,7 @@ const StepDots = ({ cur }) => (
   </div>
 )
 
-function Onboarding({ onDone, onNeedKey }) {
+function Onboarding({ onDone }) {
   const [step, setStep] = useState(0)
   const [f, setF] = useState({ learningGoal: '', currentLevel: '', weeklyHours: '' })
   const [loading, setLoading] = useState(false)
@@ -569,9 +552,6 @@ function Onboarding({ onDone, onNeedKey }) {
               <div style={{ flex: 1 }}>
                 <strong>Generation failed</strong>
                 <div style={{ marginTop: 4, fontSize: '.8rem' }}>{genError}</div>
-                <button onClick={onNeedKey} style={{ marginTop: 8, background: 'none', border: '1px solid var(--cpl)', color: 'var(--cpl)', borderRadius: 8, padding: '4px 12px', fontSize: '.75rem', cursor: 'pointer', fontFamily: 'inherit' }}>
-                  🔑 Set API Key
-                </button>
               </div>
             </div>
           )}
@@ -1161,65 +1141,7 @@ function Profile({ user, roadmap, progress, onUpdate, lp }) {
   )
 }
 
-// ─── API KEY MODAL ─────────────────────────────────────────────────────────────
-function ApiKeyModal({ open, onClose, onSave }) {
-  const [key, setKey] = useState('')
-  const [testing, setTesting] = useState(false)
-  const [err, setErr] = useState('')
-  const [ok, setOk] = useState(false)
-
-  useEffect(() => { if (!open) { setKey(''); setErr(''); setOk(false) } }, [open])
-  if (!open) return null
-
-  const verify = async () => {
-    const k = key.trim()
-    if (!k) { setErr('Please enter your API key'); return }
-    if (!k.startsWith('gsk_')) { setErr('Groq keys start with gsk_ — please double-check'); return }
-    setTesting(true); setErr('')
-    try {
-      const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + k },
-        body: JSON.stringify({ model: GROQ_MODEL, max_tokens: 5, messages: [{ role: 'user', content: 'Hi' }] }),
-      })
-      if (r.status === 401) throw new Error('Invalid key — please check and retry')
-      if (!r.ok && r.status !== 429) throw new Error('Verification failed (status ' + r.status + ')')
-      setOk(true)
-      setTimeout(() => { onSave(k); onClose() }, 700)
-    } catch (e) { setErr(e.message) }
-    setTesting(false)
-  }
-
-  return (
-    <div className="overlay" onClick={onClose}>
-      <div className="modal fade-in" style={{ maxWidth: 480 }} onClick={e => e.stopPropagation()}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
-          <h2 style={{ fontSize: '1.25rem' }}>🔑 Set Groq API Key</h2>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--cts)', fontSize: '1.5rem', cursor: 'pointer' }}>×</button>
-        </div>
-        <div style={{ background: 'rgba(108,99,255,.1)', border: '1px solid rgba(108,99,255,.3)', borderRadius: 12, padding: '1rem', marginBottom: '1.25rem', fontSize: '.875rem', lineHeight: 1.7 }}>
-          <strong style={{ color: 'var(--cpl)' }}>Get your free Groq key in 30 seconds:</strong>
-          <ol style={{ marginTop: 8, paddingLeft: '1.25rem', color: 'var(--cts)' }}>
-            <li>Go to <a href="https://console.groq.com/keys" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--cpl)' }}>console.groq.com/keys</a></li>
-            <li>Sign in (Google / GitHub) → Create API Key</li>
-            <li>Copy and paste it below</li>
-          </ol>
-        </div>
-        <Field label="Groq API Key" id="gkey" value={key}
-          onChange={e => setKey(e.target.value)} placeholder="gsk_..." error={err} />
-        <p style={{ marginTop: '.5rem', fontSize: '.75rem', color: 'var(--ctm)' }}>
-          🔒 Stored in your browser session only — never sent to our servers.
-        </p>
-        <div style={{ marginTop: '1.5rem', display: 'flex', gap: '.75rem', justifyContent: 'flex-end' }}>
-          <Btn v="s" onClick={onClose}>Cancel</Btn>
-          <Btn v={ok ? 's' : 'a'} onClick={verify} loading={testing} disabled={!key.trim() || ok}>
-            {ok ? '✓ Verified!' : 'Verify & Save'}
-          </Btn>
-        </div>
-      </div>
-    </div>
-  )
-}
+// ApiKeyModal removed — GROQ_API_KEY is set server-side in Vercel env vars only.
 
 // ─── APP ───────────────────────────────────────────────────────────────────────
 export default function App() {
@@ -1229,8 +1151,6 @@ export default function App() {
   const [roadmap, setRoadmap] = useState(null)
   const [progress, setProgress] = useState(null)
   const [booting, setBooting] = useState(true)
-  const [showKeyModal, setShowKeyModal] = useState(false)
-  const [clientKey, setClientKey] = useState(window.__SP_KEY || '')
 
   useEffect(() => {
     // Inject CSS
@@ -1342,20 +1262,13 @@ export default function App() {
     const t = theme === 'dark' ? 'light' : 'dark'; setTheme(t); await S.set('sp_theme', t)
   }
 
-  const saveClientKey = k => {
-    window.__SP_KEY = k
-    setClientKey(k)
-    try { sessionStorage.setItem('sp_key', k) } catch {}
-  }
-
-  const lp = { user, page, go, theme, toggleTheme, logout, onNeedKey: () => setShowKeyModal(true) }
+  const lp = { user, page, go, theme, toggleTheme, logout }
 
   return (
     <div className="sp" data-theme={theme}>
-      <ApiKeyModal open={showKeyModal} onClose={() => setShowKeyModal(false)} onSave={saveClientKey} />
       {page === 'login' && <Login onLogin={login} go={go} />}
       {page === 'register' && <Register onRegister={register} go={go} />}
-      {page === 'onboarding' && user && <Onboarding onDone={onboardDone} onNeedKey={() => setShowKeyModal(true)} />}
+      {page === 'onboarding' && user && <Onboarding onDone={onboardDone} />}
       {page === 'dashboard' && user && <Dashboard user={user} roadmap={roadmap} progress={progress} go={go} lp={lp} />}
       {page === 'roadmap' && user && <Roadmap roadmap={roadmap} progress={progress} onMark={markStep} onRegen={regen} go={go} lp={lp} />}
       {page === 'chat' && user && <Chat user={user} roadmap={roadmap} lp={lp} />}
