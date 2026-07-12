@@ -46,6 +46,26 @@ html,body,#root{margin:0;padding:0;width:100%;min-height:100vh;}
 .inp{padding:.75rem 1rem;background:var(--bge);border:1px solid var(--cb);border-radius:12px;color:var(--ct);font-size:1rem;transition:all .2s;width:100%;}
 .inp:focus{outline:none;border-color:var(--cp);box-shadow:0 0 0 3px var(--cpg);}
 .inp::placeholder{color:var(--ctm);}.inp-e{border-color:var(--ce) !important;}
+/* ── Kill browser autofill background + size inflation on every field ── */
+.inp:-webkit-autofill,
+.inp:-webkit-autofill:hover,
+.inp:-webkit-autofill:focus,
+.inp:-webkit-autofill:active{
+  -webkit-box-shadow:0 0 0 1000px var(--bge) inset !important;
+  -webkit-text-fill-color:var(--ct) !important;
+  caret-color:var(--ct) !important;
+  border:1px solid var(--cb) !important;
+  border-radius:12px !important;
+  padding:.75rem 1rem !important;
+  font-size:1rem !important;
+  line-height:normal !important;
+  transition:background-color 5000s ease-in-out 0s !important;
+}
+/* Password fields need extra right padding even when autofilled */
+.pw-wrap .inp:-webkit-autofill,
+.pw-wrap .inp:-webkit-autofill:hover,
+.pw-wrap .inp:-webkit-autofill:focus,
+.pw-wrap .inp:-webkit-autofill:active{padding-right:2.75rem !important;}
 /* Password wrapper — display:grid forces the input to size identically to a bare .inp */
 .pw-wrap{position:relative;display:grid;}
 .pw-wrap .inp{padding-right:2.75rem;}
