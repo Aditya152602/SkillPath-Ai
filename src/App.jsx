@@ -168,7 +168,7 @@ const S = {
 
 // ─── GROQ API — routed through /api/chat serverless proxy ──────────────────
 // Key lives in Vercel env vars only — never exposed to browser
-const GROQ_MODEL = 'llama-3.3-70b-versatile'
+const GROQ_MODEL = 'llama-3.1-8b-instant'
 
 // All AI calls go through /api/chat — the GROQ_API_KEY lives only in Vercel env vars.
 // No user-facing API key input is ever shown.
