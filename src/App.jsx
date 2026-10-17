@@ -43,7 +43,7 @@ html,body,#root{margin:0;padding:0;width:100%;min-height:100vh;}
 /* Forms */
 .fld{display:flex;flex-direction:column;gap:.5rem;}
 .lbl{font-size:.875rem;font-weight:600;color:var(--ct);}
-.inp{padding:.75rem 1rem;background:var(--bge);border:1px solid var(--cb);border-radius:12px;color:var(--ct);font-size:1rem;transition:all .2s;width:100%;}
+.inp{padding:.75rem 1rem;background:var(--bge);border:1px solid var(--cb);border-radius:12px;color:var(--ct);font-size:1rem;transition:all .2s;width:100%;box-sizing:border-box;}
 .inp:focus{outline:none;border-color:var(--cp);box-shadow:0 0 0 3px var(--cpg);}
 .inp::placeholder{color:var(--ctm);}.inp-e{border-color:var(--ce) !important;}
 /* ── Kill browser autofill background + size inflation on every field ── */
